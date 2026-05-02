@@ -1,12 +1,13 @@
 {
-  "name": "webvtt-viewer",
-  "version": "1.0.0",
+  "author": "",
   "description": "",
+  "keywords": [],
+  "license": "MIT",
   "main": "index.js",
+  "name": "webvtt-viewer",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "MIT"
+  "type": "module",
+  "version": "1.0.0"
 }
