@@ -1,1 +1,1 @@
-plugin for rendering VTT files
+plugin for rendering VTT filesˆ
