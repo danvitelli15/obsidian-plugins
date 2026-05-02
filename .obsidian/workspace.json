@@ -11,10 +11,14 @@
             "id": "27c3d5e5a060804a",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "VTT Veiwer/VTT Veiwer.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "VTT Veiwer"
             }
           }
         ]
@@ -173,9 +177,17 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "sample-plugin:Sample": false
     }
   },
   "active": "27c3d5e5a060804a",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "VTT Veiwer/example.vtt",
+    "Untitled.md",
+    "VTT Veiwer/VTT Veiwer.md",
+    "VTT Veiwer",
+    "notes",
+    "package.json"
+  ]
 }
