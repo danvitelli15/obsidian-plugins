@@ -8,20 +8,26 @@ This is a pnpm monorepo serving as a development environment for Obsidian plugin
 
 ## Build
 
-Each plugin is compiled with TypeScript directly (no bundler). From the plugin directory:
+`webvtt-viewer` uses esbuild to bundle `src/` into a single `main.js` in the plugin root. From the plugin directory:
 
 ```sh
 cd .obsidian/plugins/webvtt-viewer
-pnpm tsc
+pnpm build
 ```
 
 Or from the repo root:
 
 ```sh
-pnpm --filter webvtt-viewer tsc
+pnpm --filter webvtt-viewer build
 ```
 
-The compiled output (`main.js`) is what Obsidian loads. After rebuilding, reload the plugin in Obsidian via Settings → Community Plugins → disable/enable, or use the "Reload app without saving" command.
+Type-check without emitting:
+
+```sh
+pnpm --filter webvtt-viewer tsc --noEmit
+```
+
+`main.js` is what Obsidian loads. After rebuilding, reload the plugin in Obsidian via Settings → Community Plugins → disable/enable, or use the "Reload app without saving" command.
 
 There are no tests or lint scripts configured yet.
 

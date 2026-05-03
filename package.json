@@ -12,6 +12,7 @@
     "obsidian": "^1.12.3"
   },
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "typescript": "^6.0.3"
   }
 }

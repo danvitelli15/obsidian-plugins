@@ -1,11 +1,7 @@
 {
   "extends": "../../../tsconfig.base.json",
-  "include": ["*.ts"],
+  "include": ["src/**/*.ts"],
   "compilerOptions": {
-    "module": "commonjs",
-    "verbatimModuleSyntax": false,
-    "declaration": false,
-    "declarationMap": false,
-    "sourceMap": false
+    "noEmit": true
   }
 }

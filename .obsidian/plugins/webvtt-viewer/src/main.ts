@@ -1,10 +1,11 @@
 import { Plugin, TextFileView, WorkspaceLeaf } from "obsidian";
-import { deserializeVtt } from "./vtt";
+import { deserializeVtt, type Transcript } from "./vtt.js";
 
 export const VIEW_TYPE_WEBVTT = "webvtt-viewer";
 
 export class WebVTTViewer extends TextFileView {
   private _data: string = "";
+  private _transcript: Transcript | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -40,6 +41,8 @@ export class WebVTTViewer extends TextFileView {
       this.clear();
     }
     this._data = data;
+    this._transcript = deserializeVtt(data);
+    console.log(this._transcript);
     this.renderContent(this.contentEl);
   }
 

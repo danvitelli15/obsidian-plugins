@@ -6,7 +6,8 @@
   "main": "index.js",
   "name": "webvtt-viewer",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node esbuild.config.mjs"
   },
+  "type": "module",
   "version": "1.0.0"
 }
