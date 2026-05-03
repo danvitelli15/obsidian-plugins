@@ -180,8 +180,13 @@
       "bases:Create new base": false
     }
   },
-  "active": "f4c8385e6d663aaf",
+  "active": "dad4ecb63adfedfa",
   "lastOpenFiles": [
+    "experiment.test.ts",
+    "pnpm-lock.yaml.3878044310",
+    "node_modules/@types",
+    "vitest.workspace.ts",
+    "pnpm-lock.yaml.812151541",
     "VTT Veiwer/example.vtt",
     "VTT Veiwer/VTT Veiwer.md",
     "VTT Veiwer/teams-example.vtt",
@@ -191,10 +196,6 @@
     "tsconfig.json",
     "pnpm-lock.yaml",
     "node_modules",
-    "pnpm-workspace.yaml",
-    "package.json",
-    "Untitled.md",
-    "VTT Veiwer",
-    "notes"
+    "Untitled.md"
   ]
 }

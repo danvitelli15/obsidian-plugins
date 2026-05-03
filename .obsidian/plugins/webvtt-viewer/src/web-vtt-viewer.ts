@@ -1,5 +1,5 @@
 import { TextFileView, WorkspaceLeaf } from "obsidian";
-import { deserializeVtt, type Transcript } from "./vtt.js";
+import { deserializeVtt, type Transcript } from "./vtt.ts";
 
 export const VIEW_TYPE_WEBVTT = "webvtt-viewer";
 

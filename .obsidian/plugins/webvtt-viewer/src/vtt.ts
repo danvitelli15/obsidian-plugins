@@ -23,7 +23,7 @@ export type Transcript = {
 
 const TIMING_REGULAR_EXPRESSION = /^(\S+)\s+-->\s+(\S+)/;
 
-function parseTimestamp(timestamp: string): number {
+export function parseTimestamp(timestamp: string): number {
   const parts = timestamp.replace(",", ".").split(":");
   if (parts.length === 3) {
     return parseInt(parts[0] ?? "0") * 3600 + parseInt(parts[1] ?? "0") * 60 + parseFloat(parts[2] ?? "0");
@@ -31,7 +31,7 @@ function parseTimestamp(timestamp: string): number {
   return parseInt(parts[0] ?? "0") * 60 + parseFloat(parts[1] ?? "0");
 }
 
-function extractSpeaker(raw: string): { speaker: string; text: string } {
+export function extractSpeaker(raw: string): { speaker: string; text: string } {
   const match = raw.match(/^<v ([^>]+)>([\s\S]*)/);
   if (match) {
     return {
@@ -44,7 +44,7 @@ function extractSpeaker(raw: string): { speaker: string; text: string } {
 
 // Splits "uuid-2" → { blockId: "uuid", blockIndex: 2 }
 // Falls back to { blockId: id, blockIndex: 0 } for IDs without the pattern
-function parseBlockId(id: string): { blockId: string; blockIndex: number } {
+export function parseBlockId(id: string): { blockId: string; blockIndex: number } {
   const match = id.match(/^(.*)-(\d+)$/);
   if (match) {
     return {
@@ -123,7 +123,7 @@ export function deserializeVtt(content: string): Transcript {
         speaker: cue.speaker,
         startTime: cue.startTime,
         endTime: cue.endTime,
-        cues: [],
+        cues: [cue],
       });
       blockOrder.push(cue.blockId);
     }

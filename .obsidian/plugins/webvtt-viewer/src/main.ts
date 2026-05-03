@@ -1,5 +1,5 @@
 import { Plugin } from "obsidian";
-import { VIEW_TYPE_WEBVTT, WebVTTViewer } from "./web-vtt-viewer.js";
+import { VIEW_TYPE_WEBVTT, WebVTTViewer } from "./web-vtt-viewer.ts";
 
 export default class WebVTTViewerPlugin extends Plugin {
   async onload() {
