@@ -1,11 +1,14 @@
 import { TextFileView, WorkspaceLeaf } from "obsidian";
-import { deserializeVtt, type Transcript } from "./vtt.ts";
+import { deserializeVtt, type SpeakerBlock, type Transcript } from "./vtt.ts";
 
 export const VIEW_TYPE_WEBVTT = "webvtt-viewer";
 
 export class WebVTTViewer extends TextFileView {
   private _data: string = "";
-  private _transcript: Transcript | null = null;
+  private _transcript: Transcript = {
+    blocks: [],
+    cues: [],
+  };
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -42,23 +45,34 @@ export class WebVTTViewer extends TextFileView {
     }
     this._data = data;
     this._transcript = deserializeVtt(data);
-    console.log(this._transcript);
     this.renderContent(this.contentEl);
   }
 
-  private renderCaption(caption: string, parent: HTMLElement) {
-    parent.createEl("p", { text: caption });
+  private formatTime(seconds: number): string {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = (seconds % 60).toFixed(3);
+    return `${h > 0 ? h + ":" : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(6, "0")}`;
+  }
+
+  private renderBlock(block: SpeakerBlock, parent: HTMLElement) {
+    const blockEl = parent.createEl("div", { cls: "webvtt-block" });
+    const blockHeaderEl = blockEl.createEl("div", { cls: "webvtt-block-header" });
+    blockHeaderEl.createEl("h3", { text: block.speaker, cls: "webvtt-speaker" });
+    blockHeaderEl.createEl("span", {
+      text: `${this.formatTime(block.startTime)} → ${this.formatTime(block.endTime)}`,
+      cls: "webvtt-timestamp",
+    });
+    block.cues.forEach((cue) => {
+      blockEl.createEl("p", { text: cue.text });
+    });
   }
 
   private renderContent(parent: HTMLElement) {
     parent.empty();
-
-    const captions = this._data.split("\n\n");
-
     const contentDiv = parent.createEl("div");
-
-    captions.forEach((caption) => {
-      this.renderCaption(caption, contentDiv);
+    this._transcript.blocks.forEach((block) => {
+      this.renderBlock(block, contentDiv);
     });
   }
 }

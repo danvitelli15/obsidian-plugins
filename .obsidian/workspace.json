@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "1222f9a8c6487c73",
+        "id": "ec8a9b7bc38b1a91",
         "type": "tabs",
         "children": [
           {
-            "id": "f4c8385e6d663aaf",
+            "id": "aeeae184094f0135",
             "type": "leaf",
             "state": {
               "type": "webvtt-viewer",
@@ -180,22 +180,21 @@
       "bases:Create new base": false
     }
   },
-  "active": "dad4ecb63adfedfa",
+  "active": "aeeae184094f0135",
   "lastOpenFiles": [
+    "VTT Veiwer/example.vtt",
+    "VTT Veiwer/VTT Veiwer.md",
     "experiment.test.ts",
     "pnpm-lock.yaml.3878044310",
     "node_modules/@types",
     "vitest.workspace.ts",
     "pnpm-lock.yaml.812151541",
-    "VTT Veiwer/example.vtt",
-    "VTT Veiwer/VTT Veiwer.md",
     "VTT Veiwer/teams-example.vtt",
     "README.md",
     "CLAUDE.md",
     "tsconfig.base.json",
     "tsconfig.json",
     "pnpm-lock.yaml",
-    "node_modules",
     "Untitled.md"
   ]
 }
