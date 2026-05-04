@@ -23,7 +23,7 @@ export type Transcript = {
 
 const TIMING_REGULAR_EXPRESSION = /^(\S+)\s+-->\s+(\S+)/;
 
-export function parseTimestamp(timestamp: string): number {
+export function _parseTimestamp(timestamp: string): number {
   const parts = timestamp.replace(",", ".").split(":");
   if (parts.length === 3) {
     return parseInt(parts[0] ?? "0") * 3600 + parseInt(parts[1] ?? "0") * 60 + parseFloat(parts[2] ?? "0");
@@ -31,7 +31,7 @@ export function parseTimestamp(timestamp: string): number {
   return parseInt(parts[0] ?? "0") * 60 + parseFloat(parts[1] ?? "0");
 }
 
-export function extractSpeaker(raw: string): { speaker: string; text: string } {
+export function _extractSpeaker(raw: string): { speaker: string; text: string } {
   const match = raw.match(/^<v ([^>]+)>([\s\S]*)/);
   if (match) {
     return {
@@ -44,7 +44,7 @@ export function extractSpeaker(raw: string): { speaker: string; text: string } {
 
 // Splits "uuid-2" → { blockId: "uuid", blockIndex: 2 }
 // Falls back to { blockId: id, blockIndex: 0 } for IDs without the pattern
-export function parseBlockId(id: string): { blockId: string; blockIndex: number } {
+export function _parseBlockId(id: string): { blockId: string; blockIndex: number } {
   const match = id.match(/^(.*)-(\d+)$/);
   if (match) {
     return {
@@ -55,60 +55,7 @@ export function parseBlockId(id: string): { blockId: string; blockIndex: number 
   return { blockId: id, blockIndex: 0 };
 }
 
-export function deserializeVtt(content: string): Transcript {
-  // Normalize line endings, split into blank-line-separated blocks
-  const rawBlocks = content
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split(/\n{2,}/);
-
-  const cues: Cue[] = [];
-  let syntheticId = 0;
-
-  for (const block of rawBlocks) {
-    const lines = block.split("\n").filter((l) => l.trim() !== "");
-    if (lines.length === 0) continue;
-
-    const first = lines[0] ?? "";
-
-    // Skip header and non-cue blocks
-    if (
-      first.startsWith("WEBVTT") ||
-      first.startsWith("NOTE") ||
-      first.startsWith("STYLE") ||
-      first.startsWith("REGION")
-    ) {
-      continue;
-    }
-
-    // Determine whether first line is an ID or a timing line
-    let idLine: string | undefined;
-    let timingIdx: number;
-
-    if (TIMING_REGULAR_EXPRESSION.test(first)) {
-      timingIdx = 0;
-    } else if (lines.length > 1 && TIMING_REGULAR_EXPRESSION.test(lines[1] ?? "")) {
-      idLine = first;
-      timingIdx = 1;
-    } else {
-      continue;
-    }
-
-    const timingMatch = (lines[timingIdx] ?? "").match(TIMING_REGULAR_EXPRESSION);
-    if (!timingMatch) continue;
-
-    const startTime = parseTimestamp(timingMatch[1] ?? "");
-    const endTime = parseTimestamp(timingMatch[2] ?? "");
-    const rawText = lines.slice(timingIdx + 1).join("\n");
-    const { speaker, text } = extractSpeaker(rawText);
-
-    const id = idLine ?? String(syntheticId++);
-    const { blockId, blockIndex } = parseBlockId(id);
-
-    cues.push({ id, blockId, blockIndex, startTime, endTime, speaker, text });
-  }
-
-  // Group cues into speaker blocks, preserving order of first appearance
+export function _groupIntoBlocks(cues: Cue[]): SpeakerBlock[] {
   const blockMap = new Map<string, SpeakerBlock>();
   const blockOrder: string[] = [];
 
@@ -129,6 +76,58 @@ export function deserializeVtt(content: string): Transcript {
     }
   }
 
-  const blocks = blockOrder.map((id) => blockMap.get(id)!);
-  return { cues, blocks };
+  return blockOrder.map((id) => blockMap.get(id)!);
+}
+
+export function deserializeVtt(content: string): Transcript {
+  const rawBlocks = content
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split(/\n{2,}/);
+
+  const cues: Cue[] = [];
+  let syntheticId = 0;
+
+  for (const block of rawBlocks) {
+    const lines = block.split("\n").filter((l) => l.trim() !== "");
+    if (lines.length === 0) continue;
+
+    const first = lines[0] ?? "";
+
+    if (
+      first.startsWith("WEBVTT") ||
+      first.startsWith("NOTE") ||
+      first.startsWith("STYLE") ||
+      first.startsWith("REGION")
+    ) {
+      continue;
+    }
+
+    let idLine: string | undefined;
+    let timingIdx: number;
+
+    if (TIMING_REGULAR_EXPRESSION.test(first)) {
+      timingIdx = 0;
+    } else if (lines.length > 1 && TIMING_REGULAR_EXPRESSION.test(lines[1] ?? "")) {
+      idLine = first;
+      timingIdx = 1;
+    } else {
+      continue;
+    }
+
+    const timingMatch = (lines[timingIdx] ?? "").match(TIMING_REGULAR_EXPRESSION);
+    if (!timingMatch) continue;
+
+    const startTime = _parseTimestamp(timingMatch[1] ?? "");
+    const endTime = _parseTimestamp(timingMatch[2] ?? "");
+    const rawText = lines.slice(timingIdx + 1).join("\n");
+    const { speaker, text } = _extractSpeaker(rawText);
+
+    const id = idLine ?? String(syntheticId++);
+    const { blockId, blockIndex } = _parseBlockId(id);
+
+    cues.push({ id, blockId, blockIndex, startTime, endTime, speaker, text });
+  }
+
+  return { cues, blocks: _groupIntoBlocks(cues) };
 }

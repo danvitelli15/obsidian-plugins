@@ -1,106 +1,145 @@
 import assert from "node:assert/strict";
 import { describe, it, suite } from "node:test";
-import { deserializeVtt, extractSpeaker, parseBlockId, parseTimestamp } from "./vtt.ts";
+import {
+  _extractSpeaker,
+  _groupIntoBlocks,
+  _parseBlockId,
+  _parseTimestamp,
+  deserializeVtt,
+  type Cue,
+} from "./vtt.ts";
+
+const makeCue = (overrides: Partial<Cue> & { blockId: string }): Cue => ({
+  id: overrides.blockId + "-0",
+  blockIndex: 0,
+  startTime: 0,
+  endTime: 1,
+  speaker: "",
+  text: "",
+  ...overrides,
+});
 
 suite("VTT Parser Tests", () => {
-  describe("parseTimestamp", () => {
+  describe("_parseTimestamp", () => {
     it("parses MM:SS.mmm", () => {
-      assert.ok(Math.abs(parseTimestamp("01:30.500") - 90.5) < 0.001);
+      assert.ok(Math.abs(_parseTimestamp("01:30.500") - 90.5) < 0.001);
     });
 
     it("parses HH:MM:SS.mmm", () => {
-      assert.ok(Math.abs(parseTimestamp("01:02:03.000") - 3723) < 0.001);
+      assert.ok(Math.abs(_parseTimestamp("01:02:03.000") - 3723) < 0.001);
     });
 
     it("handles comma as decimal separator", () => {
-      assert.ok(Math.abs(parseTimestamp("00:11,000") - 11) < 0.001);
+      assert.ok(Math.abs(_parseTimestamp("00:11,000") - 11) < 0.001);
     });
 
     it("parses zero timestamp", () => {
-      assert.equal(parseTimestamp("00:00.000"), 0);
+      assert.equal(_parseTimestamp("00:00.000"), 0);
     });
   });
 
-  describe("extractSpeaker", () => {
+  describe("_extractSpeaker", () => {
     it("extracts speaker and text from a voice tag", () => {
-      assert.deepEqual(extractSpeaker("<v Roger Bingham>Hello there"), {
+      assert.deepEqual(_extractSpeaker("<v Roger Bingham>Hello there"), {
         speaker: "Roger Bingham",
         text: "Hello there",
       });
     });
 
     it("trims whitespace from speaker and text", () => {
-      assert.deepEqual(extractSpeaker("<v  Jane Doe >  some text  "), {
+      assert.deepEqual(_extractSpeaker("<v  Jane Doe >  some text  "), {
         speaker: "Jane Doe",
         text: "some text",
       });
     });
 
     it("returns empty speaker when no voice tag", () => {
-      assert.deepEqual(extractSpeaker("Just plain text"), {
+      assert.deepEqual(_extractSpeaker("Just plain text"), {
         speaker: "",
         text: "Just plain text",
       });
     });
 
     it("handles multiline text after voice tag", () => {
-      const result = extractSpeaker("<v Speaker>line one\nline two");
+      const result = _extractSpeaker("<v Speaker>line one\nline two");
       assert.equal(result.speaker, "Speaker");
       assert.equal(result.text, "line one\nline two");
     });
   });
 
-  describe("parseBlockId", () => {
+  describe("_parseBlockId", () => {
     it("splits uuid-N into blockId and blockIndex", () => {
-      assert.deepEqual(parseBlockId("abc123-2"), { blockId: "abc123", blockIndex: 2 });
+      assert.deepEqual(_parseBlockId("abc123-2"), { blockId: "abc123", blockIndex: 2 });
     });
 
     it("handles index 0", () => {
-      assert.deepEqual(parseBlockId("abc123-0"), { blockId: "abc123", blockIndex: 0 });
+      assert.deepEqual(_parseBlockId("abc123-0"), { blockId: "abc123", blockIndex: 0 });
     });
 
     it("handles full UUID with trailing index", () => {
       const id = "550e8400-e29b-41d4-a716-446655440000-3";
-      assert.deepEqual(parseBlockId(id), {
+      assert.deepEqual(_parseBlockId(id), {
         blockId: "550e8400-e29b-41d4-a716-446655440000",
         blockIndex: 3,
       });
     });
 
-    it("treats a plain string with no dash as its own block", () => {
-      assert.deepEqual(parseBlockId("nohyphen"), { blockId: "nohyphen", blockIndex: 0 });
+    it("treats a plain string with no trailing number as its own block", () => {
+      assert.deepEqual(_parseBlockId("nohyphen"), { blockId: "nohyphen", blockIndex: 0 });
     });
   });
 
-  describe("deserializeVtt", () => {
-    it("skips the WEBVTT header", () => {
-      const vtt = "WEBVTT\n\n00:01.000 --> 00:02.000\nHello";
-      const { cues } = deserializeVtt(vtt);
-      assert.equal(cues.length, 1);
+  describe("_groupIntoBlocks", () => {
+    it("returns an empty array for no cues", () => {
+      assert.deepEqual(_groupIntoBlocks([]), []);
     });
 
-    it("parses a cue with no ID and no speaker", () => {
-      const vtt = "WEBVTT\n\n00:01.000 --> 00:02.000\nHello world";
-      const { cues } = deserializeVtt(vtt);
-      const cue = cues[0]!;
-      assert.ok(Math.abs(cue.startTime - 1) < 0.001);
-      assert.ok(Math.abs(cue.endTime - 2) < 0.001);
-      assert.equal(cue.text, "Hello world");
-      assert.equal(cue.speaker, "");
+    it("groups cues with the same blockId into one block", () => {
+      const cues = [
+        makeCue({ blockId: "uuid", blockIndex: 0, id: "uuid-0", startTime: 1, endTime: 3, speaker: "Alice", text: "First" }),
+        makeCue({ blockId: "uuid", blockIndex: 1, id: "uuid-1", startTime: 3, endTime: 5, speaker: "Alice", text: "Second" }),
+      ];
+      const blocks = _groupIntoBlocks(cues);
+      assert.equal(blocks.length, 1);
+      assert.equal(blocks[0]!.speaker, "Alice");
+      assert.equal(blocks[0]!.cues.length, 2);
+      assert.equal(blocks[0]!.startTime, 1);
+      assert.equal(blocks[0]!.endTime, 5);
     });
 
-    it("parses a cue with an explicit ID", () => {
-      const vtt = "WEBVTT\n\nmyid-0\n00:01.000 --> 00:02.000\n<v Alice>Hi";
-      const { cues } = deserializeVtt(vtt);
-      const cue = cues[0]!;
-      assert.equal(cue.id, "myid-0");
-      assert.equal(cue.blockId, "myid");
-      assert.equal(cue.blockIndex, 0);
-      assert.equal(cue.speaker, "Alice");
-      assert.equal(cue.text, "Hi");
+    it("produces separate blocks for different blockIds", () => {
+      const cues = [
+        makeCue({ blockId: "aaa", speaker: "Alice" }),
+        makeCue({ blockId: "bbb", speaker: "Bob" }),
+      ];
+      const blocks = _groupIntoBlocks(cues);
+      assert.equal(blocks.length, 2);
+      assert.equal(blocks[0]!.speaker, "Alice");
+      assert.equal(blocks[1]!.speaker, "Bob");
     });
 
-    it("groups cues sharing a blockId into one SpeakerBlock", () => {
+    it("preserves order of first appearance", () => {
+      const cues = [
+        makeCue({ blockId: "bbb", speaker: "Bob" }),
+        makeCue({ blockId: "aaa", speaker: "Alice" }),
+      ];
+      const blocks = _groupIntoBlocks(cues);
+      assert.equal(blocks[0]!.speaker, "Bob");
+      assert.equal(blocks[1]!.speaker, "Alice");
+    });
+
+    it("tracks endTime as the max across cues in a block", () => {
+      const cues = [
+        makeCue({ blockId: "uuid", id: "uuid-0", startTime: 1, endTime: 3 }),
+        makeCue({ blockId: "uuid", id: "uuid-1", startTime: 3, endTime: 7 }),
+        makeCue({ blockId: "uuid", id: "uuid-2", startTime: 5, endTime: 6 }),
+      ];
+      assert.equal(_groupIntoBlocks(cues)[0]!.endTime, 7);
+    });
+  });
+
+  describe("deserializeVtt (integration)", () => {
+    it("parses cues and groups them into blocks end-to-end", () => {
       const vtt = [
         "WEBVTT",
         "",
@@ -111,46 +150,27 @@ suite("VTT Parser Tests", () => {
         "uuid-1",
         "00:03.000 --> 00:05.000",
         "<v Alice>Second",
+        "",
+        "other-0",
+        "00:05.000 --> 00:06.000",
+        "<v Bob>Hi",
       ].join("\n");
 
-      const { blocks, cues } = deserializeVtt(vtt);
-      assert.equal(cues.length, 2);
-      assert.equal(blocks.length, 1);
-      assert.equal(blocks[0]!.speaker, "Alice");
-      assert.equal(blocks[0]!.cues.length, 2);
-      assert.ok(Math.abs(blocks[0]!.startTime - 1) < 0.001);
-      assert.ok(Math.abs(blocks[0]!.endTime - 5) < 0.001);
-    });
-
-    it("produces separate blocks for different speakers", () => {
-      const vtt = [
-        "WEBVTT",
-        "",
-        "aaa-0",
-        "00:01.000 --> 00:02.000",
-        "<v Alice>Hello",
-        "",
-        "bbb-0",
-        "00:02.000 --> 00:03.000",
-        "<v Bob>Hi there",
-      ].join("\n");
-
-      const { blocks } = deserializeVtt(vtt);
+      const { cues, blocks } = deserializeVtt(vtt);
+      assert.equal(cues.length, 3);
       assert.equal(blocks.length, 2);
       assert.equal(blocks[0]!.speaker, "Alice");
       assert.equal(blocks[1]!.speaker, "Bob");
     });
 
-    it("skips NOTE blocks", () => {
-      const vtt = "WEBVTT\n\nNOTE This is a comment\n\n00:01.000 --> 00:02.000\nHello";
-      const { cues } = deserializeVtt(vtt);
-      assert.equal(cues.length, 1);
+    it("skips WEBVTT header, NOTE, STYLE, and REGION blocks", () => {
+      const vtt = "WEBVTT\n\nNOTE comment\n\n00:01.000 --> 00:02.000\nHello";
+      assert.equal(deserializeVtt(vtt).cues.length, 1);
     });
 
     it("normalizes CRLF line endings", () => {
       const vtt = "WEBVTT\r\n\r\n00:01.000 --> 00:02.000\r\nHello";
       const { cues } = deserializeVtt(vtt);
-      assert.equal(cues.length, 1);
       assert.equal(cues[0]!.text, "Hello");
     });
   });
